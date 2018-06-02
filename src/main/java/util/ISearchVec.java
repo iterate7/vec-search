@@ -2,7 +2,7 @@ package util;
 
 import java.util.TreeSet;
 
-import vec.search.word2vec.WordEntry;
+import vecsearch.bruteforce.WordEntry;
 
 public interface ISearchVec {
 	

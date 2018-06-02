@@ -1,10 +1,10 @@
-package vec.search.word2vec;
+package vecsearch.bruteforce;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.TreeSet;
 
-import vecSearch.VecSearch;
+import util.VecSearch;
 
 public class Word2VEC extends VecSearch  {
 	

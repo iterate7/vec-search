@@ -1,4 +1,4 @@
-package vec.search.word2vec;
+package vecsearch.bruteforce;
 
 
 public class WordEntry implements Comparable<WordEntry> {

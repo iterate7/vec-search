@@ -1,4 +1,4 @@
-package vecSearch;
+package util;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -7,8 +7,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
-
-import util.ISearchVec;
 
 public abstract class VecSearch implements ISearchVec{
 
