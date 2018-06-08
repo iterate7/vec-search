@@ -27,7 +27,7 @@ public abstract class VecSearch implements ISearchVec{
 	 *            模型的路径
 	 * @throws IOException
 	 */
-	protected void loadGoogleModel(String path) throws IOException {
+	public void loadGoogleModel(String path) throws IOException {
 		if(wordMap==null || wordMap.size()==0)
 		{
 			File f = new File(path);
@@ -44,7 +44,7 @@ public abstract class VecSearch implements ISearchVec{
 			// //读取词数
 			words = Integer.parseInt(readString(dis));
 			System.out.println("word:"+words);
-			// //大小
+			// //维度
 			size = Integer.parseInt(readString(dis));
 			String word;
 			float[] vectors = null;
