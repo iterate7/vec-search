@@ -12,56 +12,36 @@ import util.Util;
 import vecsearch.bruteforce.Word2VEC;
 import vecsearch.bruteforce.WordEntry;
 
-public class CosineHash implements IHash{
+public class CityBlockHash implements IHash{
 	
 	private int dimension = 100;
-	private int hashNums = 32;
-	private double hashPlane[][] = new double[hashNums][dimension];
+	private double w = 0;
+	private double[] randomPartition;
 	/**
 	 * 为何直接随机就可以了？
 	 */
 	private static final long serialVersionUID = 778951747630668248L;
 	
-	public CosineHash(int dimension, int hashNums)
+	public CityBlockHash(int dimension, int w)
 	{
+		this.w = w;
 		this.dimension = dimension;
-		hashPlane = new double[hashNums][dimension];
-		for(int i=0;i<hashNums;i++)
-		{
-			hashPlane[i] = generateRandomProjection(dimension);
-		}
+		randomPartition = generateRandomProjection(dimension);
+		 
 	}
  
 	public long hash(double[] vector) {
 
-		
-		int planeState[] = new int[dimension];
-		for(int i=0;i<hashPlane.length;i++)
-		{
-			//dot
-			double value = Util.dotProduct(vector, hashPlane[i]);
-			//combine
-			planeState[i] = value > 0 ? 1 : 0;
+		int hash[] = new int[randomPartition.length];
+		for(int d=0; d<randomPartition.length; d++) {
+			hash[d] =  (int) (vector[d]-randomPartition[d] / Double.valueOf(w));
 		}
-		
-		return combine(planeState);
+		return Arrays.hashCode(hash);
 	}
 	
 	 
 	
-	public long combine(int[] planeState) {
-		//Treat the hashes as a series of bits.
-		//They are either zero or one, the index 
-		//represents the value.
-		long result = 0;
-		//factor holds the power of two.
-		long factor = 1;
-		for(int i = 0 ; i < planeState.length ; i++){
-			result += planeState[i] == 0 ? 0 : factor;
-			factor *= 2;
-		}
-		return result;
-	}
+	
 
 	private double[] generateRandomProjection(int dimension) {
 		Random rand = new Random();
@@ -86,7 +66,7 @@ public class CosineHash implements IHash{
 		}
 		HashMap<String,float[]> word2vec = vec.getWordMap();
 		//CosineHash: 特别小的hashNums肯定不行；但是大到一定程度也没必要，因为根本切割不到足够信息了。64位之后就没意义了
-		 CosineHash hashTool = new CosineHash(vec.getSize(),256);
+		 CityBlockHash hashTool = new CityBlockHash(vec.getSize(),2);
 		 HashMap<String,Long> word2CosineHash = new HashMap<String, Long>();
 		 for(String key: word2vec.keySet())
 		 {
