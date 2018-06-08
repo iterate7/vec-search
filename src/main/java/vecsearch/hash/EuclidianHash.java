@@ -15,7 +15,7 @@ public class EuclidianHash implements IHash{
 	private int dimension = 100;
 	private double w = 0;
 	private int offset = 0;
-	private double[] randomPartition;
+	private double[] randomProjection;
 	/**
 	 * 为何直接随机就可以了？
 	 */
@@ -23,17 +23,24 @@ public class EuclidianHash implements IHash{
 	
 	public EuclidianHash(int dimension, int w)
 	{
-		Random rnd = new Random();
+		Random rand = new Random();
 		this.w = w;
-		this.offset = rnd.nextInt(w);
 		this.dimension = dimension;
-		randomPartition = generateRandomProjection(dimension);
-		 
+		this.w = w;
+		this.offset = rand.nextInt(w);
+		
+		randomProjection = new double[dimension];
+		for(int d=0; d<dimension; d++) {
+			//mean 0
+			//standard deviation 1.0
+			double val = rand.nextGaussian();
+			randomProjection[d]=val;
+		}
 	}
  
 	public long hash(double[] vector) {
 
-		double hashValue = (Util.dotProduct(vector,randomPartition)+offset)/Double.valueOf(w);
+		double hashValue = (Util.dotProduct(vector,randomProjection)+offset)/Double.valueOf(w);
 		return Math.round(hashValue);
 		
 	}
@@ -65,7 +72,7 @@ public class EuclidianHash implements IHash{
 		}
 		HashMap<String,float[]> word2vec = vec.getWordMap();
 		//CosineHash: 特别小的hashNums肯定不行；但是大到一定程度也没必要，因为根本切割不到足够信息了。64位之后就没意义了
-		 EuclidianHash hashTool = new EuclidianHash(vec.getSize(),10);
+		 EuclidianHash hashTool = new EuclidianHash(vec.getSize(),1);
 		 HashMap<String,Long> word2CosineHash = new HashMap<String, Long>();
 		 for(String key: word2vec.keySet())
 		 {
