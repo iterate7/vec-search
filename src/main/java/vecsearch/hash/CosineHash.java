@@ -1,10 +1,9 @@
 package vecsearch.hash;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
 
@@ -13,7 +12,7 @@ import vecsearch.bruteforce.Word2VEC;
 import vecsearch.bruteforce.WordEntry;
 
 public class CosineHash implements IHash{
-	
+	private Random rand = new Random(237);
 	private int dimension = 100;
 	private int hashNums = 32;
 	private double hashPlane[][] = new double[hashNums][dimension];
@@ -29,6 +28,8 @@ public class CosineHash implements IHash{
 		for(int i=0;i<hashNums;i++)
 		{
 			hashPlane[i] = generateRandomProjection(dimension);
+			if(i==0)
+				System.out.println(Arrays.toString(hashPlane[i]));
 		}
 	}
  
@@ -47,6 +48,24 @@ public class CosineHash implements IHash{
 		return combine(planeState);
 	}
 	
+	
+public BitSet hashArray(double[] vector) {
+
+		
+		int planeState[] = new int[hashPlane.length];
+		
+		BitSet bs = new BitSet(hashPlane.length);
+		
+		for(int i=0;i<hashPlane.length;i++)
+		{
+			//dot
+			double value = Util.dotProduct(vector, hashPlane[i]);
+			bs.set(i, (value > 0 ? true :false));
+			
+		}
+		
+		return bs;
+	}
 	 
 	
 	public long combine(int[] planeState) {
@@ -64,7 +83,7 @@ public class CosineHash implements IHash{
 	}
 
 	private double[] generateRandomProjection(int dimension) {
-		Random rand = new Random();
+		
 		double randProject[] = new double[dimension];
 		for (int d = 0; d < dimension; d++) {
 			// mean 0
@@ -81,13 +100,17 @@ public class CosineHash implements IHash{
 		Word2VEC vec = new Word2VEC();
 		vec.loadGoogleModel("E:\\data\\word2vec-corpus\\baike\\vectors.bin.ansj10w.skip");
 		String str = "美女";
-		for (int i = 0; i < 1; i++) {
-			System.out.println(vec.distance(str));
+		long timeusage = System.currentTimeMillis();
+		System.out.println(vec.distance(str));
+		for (int i = 0; i < 100; i++) {
+			vec.distance(str);
 		}
+		long timeend = System.currentTimeMillis();
+		System.out.println(timeend-timeusage);;
 		HashMap<String,float[]> word2vec = vec.getWordMap();
 		//CosineHash: 特别小的hashNums肯定不行；但是大到一定程度也没必要，因为根本切割不到足够信息了。64位之后就没意义了
-		 CosineHash hashTool = new CosineHash(vec.getSize(),256);
-		 HashMap<String,Long> word2CosineHash = new HashMap<String, Long>();
+		 CosineHash hashTool = new CosineHash(vec.getSize(),50);
+		 HashMap<String,BitSet> word2CosineHash = new HashMap<String, BitSet>();
 		 for(String key: word2vec.keySet())
 		 {
 			 double[] temp = new double[vec.getSize()];
@@ -95,14 +118,31 @@ public class CosineHash implements IHash{
 			 {
 				 temp[k] = word2vec.get(key)[k];
 			 }
-			 word2CosineHash.put(key, hashTool.hash(temp));
+			 word2CosineHash.put(key, hashTool.hashArray(temp));
 		 }
-		 long meinv = word2CosineHash.get(str);
+		 word2vec = null;
+		 
+		 BitSet meinv = word2CosineHash.get(str);
+		 timeusage = System.currentTimeMillis();
+		 for (int i = 0; i < 100; i++) {
+		
+			 TreeSet<WordEntry> ret = new TreeSet<WordEntry>();
+			 for(String key: word2CosineHash.keySet())
+			 {
+				 float diff = (float)sim(meinv,word2CosineHash.get(key));
+				 ret.add(new WordEntry(key,diff));
+				 if(ret.size()>9)
+					 ret.pollLast();
+			 }
+		 }
+		 timeend = System.currentTimeMillis();
+		 System.out.println(timeend-timeusage);;
 		 TreeSet<WordEntry> ret = new TreeSet<WordEntry>();
 		 for(String key: word2CosineHash.keySet())
 		 {
-			 ret.add(new WordEntry(key,-Long.bitCount(word2CosineHash.get(key)^meinv)));
-			 if(ret.size()>50)
+			 float diff = (float)sim(meinv,word2CosineHash.get(key));
+			 ret.add(new WordEntry(key,diff));
+			 if(ret.size()>9)
 				 ret.pollLast();
 		 }
 		 for(WordEntry we: ret)
@@ -111,8 +151,20 @@ public class CosineHash implements IHash{
 		 }
 	}
 	
+	public static double sim(BitSet v1, BitSet v2)
+	{
+		int cnt = 0;
+		for(int i=0;i<v1.length();i++)
+		{
+			if(v1.get(i)==v2.get(i))
+				cnt++;
+		}
+		return cnt;
+	}
+	
 	public static void main(String args[]) throws IOException
 	{
-		 test();
+		// test();
+		CosineHash ch = new CosineHash(300,100);
 	}
 }
