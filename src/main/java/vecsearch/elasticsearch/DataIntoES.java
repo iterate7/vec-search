@@ -1,14 +1,23 @@
 package vecsearch.elasticsearch;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Arrays;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
+import org.elasticsearch.action.admin.indices.exists.IndicesExistsRequest;
+import org.elasticsearch.action.admin.indices.exists.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.Digest;
 
 import util.ClientModule;
@@ -26,11 +35,64 @@ public class DataIntoES {
 	private static int numOfRandProjection = 300;
 	private static Client client = ClientModule.client_log;
 	/**  **/
-	private static CosineHash cosineHash = new CosineHash(dimension, numOfRandProjection); 
+	public static CosineHash cosineHash = new CosineHash(dimension, numOfRandProjection); 
 	
 	public static void main(String[] args) throws IOException {
 
-		write();
+		// createIndex(client, "vec");
+		// createMapping(client, "vec", "vec");
+		 write();
+	}
+	
+	
+	public static boolean createIndex(Client client, String indexName) {
+		
+		Map<String,Object> settings = new HashMap<String,Object>();
+	 	settings.put("index.refresh_interval", "-1");
+        settings.put("index.number_of_shards", "5");
+        settings.put("index.number_of_replicas","3");
+        settings.put("index.translog.flush_threshold_ops","30000");
+        settings.put("index.merge.policy.merge_factor","30000");
+		settings.put("client.transport.ping_timeout", "100s");
+		settings.put("client.transport.sniff", "true");
+		
+		CreateIndexResponse  indexresponse = client.admin().indices()
+				.prepareCreate(indexName).setSettings(settings).execute().actionGet();
+		if(indexresponse.getAcknowledged()) {
+			return true;
+		}
+		else 
+			return false;
+	}
+	
+	public static void createMapping(Client client, String index, String type) {
+		try {
+			InputStream is = InputStream.class.getResourceAsStream("/vecsearch/elasticsearch/vec.json");
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			String line = "";
+			StringBuffer str = new StringBuffer();
+			while ((line = br.readLine()) != null) {
+				str.append(line);
+			}
+			System.out.println(str);
+			PutMappingRequest mapping = Requests.putMappingRequest(index)
+					.type(type).source(str.toString());
+			client.admin().indices().putMapping(mapping).actionGet();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		System.out.println("create mapping succed");
+	}
+	
+	public static void deleteIndex(Client client_log, String indexName){
+		IndicesExistsRequest inExistsRequest = new IndicesExistsRequest(indexName);
+		IndicesExistsResponse inExistsResponse = client_log.admin().indices()
+		                    .exists(inExistsRequest).actionGet();
+		if(inExistsResponse.isExists()){
+			DeleteIndexResponse dResponse = client_log.admin().indices().prepareDelete(indexName)
+                .execute().actionGet();
+			System.out.println("delete index " + indexName + " " + dResponse.getAcknowledged());
+		}
 	}
 	
 	public static void write() throws IOException
@@ -46,6 +108,7 @@ public class DataIntoES {
 		long timeend = System.currentTimeMillis();
 		System.out.println(timeend-timeusage);;
 		HashMap<String,float[]> word2vec = vec.getWordMap();
+		
 		BulkRequestBuilder bulk = client.prepareBulk();
 		int cnt = 0;
 		for(String key: word2vec.keySet())
@@ -56,7 +119,6 @@ public class DataIntoES {
 				vecConv[i] = vecOrig[i];
 			}
 			Map<String,Object> source = feature(vecConv);
-			source.put("ktitle", key);
 			source.put("title",key);
 			String id = Digest.md5Hex(key);
 			bulk.add(client.prepareIndex("vec","vec",id).setSource(source));
@@ -83,17 +145,28 @@ public class DataIntoES {
 	public static Map<String,Object> feature(double[] vec)
 	{
 		Map<String,Object> vecMerge = new HashMap<String,Object>();
-		vecMerge.put("vec", Arrays.toString(vec));
-		for(int i = 0; i< vec.length; i++)
-		{
-			vecMerge.put("f_"+i, (float)vec[i]); //range?!
-		}
+		//vecMerge.put("vec2", Arrays.toString(vec));
+		//		for(int i = 0; i< vec.length; i++)
+		//		{
+		//			vecMerge.put("f_"+i, (float)vec[i]); //range?!
+		//		}
 		BitSet hashVector = cosineHash.hashArray(vec);
+		//List<String> bitHash = new ArrayList<String>();
+		String hashTrue = "";
+		String hashFalse = "";
 		for(int i = 0; i< hashVector.length(); i++)
 		{
 			if(hashVector.get(i))
-			vecMerge.put("h_"+i, hashVector.get(i)); //range?!
+			{
+				hashTrue+=("t"+i)+" ";
+			}
+			else
+			{
+				hashFalse+=("f"+i)+" ";
+			}
 		}
+		vecMerge.put("ccoshash", hashTrue.trim());
+		vecMerge.put("coshash_false", hashFalse.trim());
 		
 		return vecMerge;
 	}
