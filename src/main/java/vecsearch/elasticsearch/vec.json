@@ -1,0 +1,16 @@
+{
+    "vec": {
+        "properties": {
+            "coshash": {
+                "type": "string",
+                "index": "analyzed",
+                "analyzer": "whitespace"
+            },
+            "coshash_false": {
+                "type": "string",
+                "index": "analyzed",
+                "analyzer": "whitespace"
+            } 
+        }
+    }
+}
