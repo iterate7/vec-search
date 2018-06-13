@@ -39,9 +39,9 @@ public class DataIntoES {
 	
 	public static void main(String[] args) throws IOException {
 
-		// createIndex(client, "vec");
-		// createMapping(client, "vec", "vec");
-		 write();
+//		  createIndex(client, "vec");
+//		  createMapping(client, "vec", "vec");
+		  write(args[0]);
 	}
 	
 	
@@ -95,10 +95,10 @@ public class DataIntoES {
 		}
 	}
 	
-	public static void write() throws IOException
+	public static void write(String path) throws IOException
 	{
 		Word2VEC vec = new Word2VEC();
-		vec.loadGoogleModel("E:\\data\\word2vec-corpus\\baike\\vectors.bin.ansj10w.skip");
+		vec.loadGoogleModel(path);
 		String str = "美女";
 		long timeusage = System.currentTimeMillis();
 		System.out.println(vec.distance(str));
@@ -154,20 +154,25 @@ public class DataIntoES {
 		//List<String> bitHash = new ArrayList<String>();
 		String hashTrue = "";
 		String hashFalse = "";
+		List<String> tA = new ArrayList<String>();
+		List<String> fA = new ArrayList<String>();
 		for(int i = 0; i< hashVector.length(); i++)
 		{
 			if(hashVector.get(i))
 			{
-				hashTrue+=("t"+i)+" ";
+				//hashTrue+=("t"+i)+" ";
+				tA.add(("t"+i));
 			}
 			else
 			{
-				hashFalse+=("f"+i)+" ";
+				//hashFalse+=("f"+i)+" ";
+				fA.add("f"+i);
 			}
 		}
-		vecMerge.put("ccoshash", hashTrue.trim());
-		vecMerge.put("coshash_false", hashFalse.trim());
-		
+		vecMerge.put("ccoshash", tA);
+		vecMerge.put("coshash_false", fA);
+		tA = null;
+		fA = null;
 		return vecMerge;
 	}
 	

@@ -3,13 +3,11 @@
         "properties": {
             "coshash": {
                 "type": "string",
-                "index": "analyzed",
-                "analyzer": "whitespace"
+                "index": "not_analyzed"
             },
             "coshash_false": {
                 "type": "string",
-                "index": "analyzed",
-                "analyzer": "whitespace"
+                "index": "not_analyzed"
             } 
         }
     }

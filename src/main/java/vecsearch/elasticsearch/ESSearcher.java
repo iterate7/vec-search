@@ -37,7 +37,7 @@ public class ESSearcher {
 	public static void main(String args[]) throws IOException
 	{
 		Word2VEC vec = new Word2VEC();
-		vec.loadGoogleModel("E:\\data\\word2vec-corpus\\baike\\vectors.bin.ansj10w.skip");
+		vec.loadGoogleModel(args[0]);
 		String str = "美女";
 		long timeusage = System.currentTimeMillis();
 		System.out.println(vec.distance(str));
@@ -69,8 +69,8 @@ public class ESSearcher {
 		BitSet hashVector = DataIntoES.cosineHash.hashArray(vec);
 		BoolQueryBuilder bq = QueryBuilders.boolQuery();
 		String q = "";
-		String hashTrue = ""; int cntT = 10;
-		String hashFalse = ""; int cntF = 100;
+		String hashTrue = ""; int cntT = 300;
+		String hashFalse = ""; int cntF = 300;
 		for(int i = 0; i< hashVector.length(); i++)
 		{
 		 
@@ -88,18 +88,15 @@ public class ESSearcher {
 					cntF--;
 					if(cntF>0)
 					{
-						hashTrue+=("t"+i)+" ";
+						hashFalse+=("f"+i)+" ";
 					}
-					hashFalse+=("f"+i)+" ";
 				}
 		 
 		
 		}
 		
-	
-		
-		bq.should(QueryBuilders.queryString(hashTrue).field("ccoshash"));
-		bq.should(QueryBuilders.queryString(hashFalse).field("coshash_false"));
+		 bq.should(QueryBuilders.queryString(hashTrue).field("ccoshash"));
+		//bq.should(QueryBuilders.queryString(hashFalse).field("coshash_false"));
 		
 		
 		SearchRequestBuilder searchRequestBuilder = client
